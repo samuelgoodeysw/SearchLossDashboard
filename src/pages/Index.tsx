@@ -1,14 +1,22 @@
 import { useState } from "react";
+import TabExecutiveSnapshot from "@/components/dashboard/TabExecutiveSnapshot";
+import TabAccountPerformance from "@/components/dashboard/TabAccountPerformance";
+import TabRevenueProductMix from "@/components/dashboard/TabRevenueProductMix";
+import TabFulfillmentInventory from "@/components/dashboard/TabFulfillmentInventory";
 import TabSearchDiscovery from "@/components/dashboard/TabSearchDiscovery";
 
 const tabs = [
+  { id: "executive", label: "Executive View" },
+  { id: "accounts", label: "Accounts" },
+  { id: "revenue", label: "Revenue & Margin" },
+  { id: "fulfillment", label: "Inventory & Fulfillment" },
   { id: "search", label: "Search & Discovery" },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<TabId>("search");
+  const [activeTab, setActiveTab] = useState<TabId>("executive");
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,6 +59,10 @@ const Index = () => {
 
       {/* Content */}
       <main className="mx-auto max-w-[1440px] p-6">
+        {activeTab === "executive" && <TabExecutiveSnapshot />}
+        {activeTab === "accounts" && <TabAccountPerformance />}
+        {activeTab === "revenue" && <TabRevenueProductMix />}
+        {activeTab === "fulfillment" && <TabFulfillmentInventory />}
         {activeTab === "search" && <TabSearchDiscovery />}
       </main>
     </div>
