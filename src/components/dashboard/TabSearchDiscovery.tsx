@@ -572,8 +572,11 @@ export default function TabSearchDiscovery() {
     return (
       <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
         <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
-          <p className="text-sm font-medium text-slate-400">
-            Loading failed search opportunities...
+          <p className="text-sm font-medium text-slate-300">
+            Loading search opportunity data...
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Checking the latest Magento search signals.
           </p>
           <div className="mt-3 h-2 w-48 animate-pulse rounded-full bg-slate-800" />
           <div className="mt-2 h-2 w-72 max-w-full animate-pulse rounded-full bg-slate-800" />
@@ -587,12 +590,18 @@ export default function TabSearchDiscovery() {
       <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
         <div className="rounded-xl border border-red-500/30 bg-red-950/30 p-4">
           <h2 className="text-sm font-semibold text-red-200">
-            Failed search opportunities could not be loaded
+            Search opportunities could not be loaded
           </h2>
-          <p className="mt-2 text-xs text-red-300">{errorMessage}</p>
-          <p className="mt-2 text-xs text-red-300/90">
-            Check that the Vercel API route is running and that the Magento API
-            URL/token are set correctly.
+          <p className="mt-2 text-xs leading-5 text-red-300">
+            The dashboard could not connect to the read-only Magento data
+            source.
+          </p>
+          <p className="mt-2 text-xs leading-5 text-red-300/90">
+            No store data has been changed. Check the Magento API URL, access
+            token, and dashboard environment settings.
+          </p>
+          <p className="mt-2 text-[11px] leading-5 text-red-300/70">
+            Technical detail: {errorMessage}
           </p>
         </div>
       </section>
@@ -774,9 +783,37 @@ export default function TabSearchDiscovery() {
           </div>
         </div>
 
-        {filteredTerms.length === 0 ? (
-          <div className="p-5 text-xs text-slate-300">
-            No failed search terms match the current filters.
+        {failedSearchTerms.length === 0 ? (
+          <div className="p-5">
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-5">
+              <h3 className="text-sm font-semibold text-white">
+                No failed search opportunities found yet
+              </h3>
+              <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-400">
+                Once Magento records failed or zero-result searches, they will
+                appear here as prioritised opportunities with likely issues,
+                suggested actions, and Magento checks / fixes.
+              </p>
+            </div>
+          </div>
+        ) : filteredTerms.length === 0 ? (
+          <div className="p-5">
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/50 p-5">
+              <h3 className="text-sm font-semibold text-white">
+                No opportunities match the current filters
+              </h3>
+              <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-400">
+                Try clearing the filters or searching for a different customer
+                search term.
+              </p>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="mt-4 rounded-xl border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:bg-slate-800"
+              >
+                Clear filters
+              </button>
+            </div>
           </div>
         ) : (
           <div className="overflow-x-auto">

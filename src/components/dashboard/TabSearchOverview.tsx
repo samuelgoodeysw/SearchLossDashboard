@@ -89,13 +89,20 @@ export default function TabSearchOverview() {
   }, []);
 
   const searchData = data?.searchData || {};
+  const hasAnySearchSignal =
+    (searchData.totalSearches || 0) > 0 ||
+    (searchData.failedSearches || 0) > 0 ||
+    (searchData.modeledDemandLost || 0) > 0;
 
   if (loading) {
     return (
       <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
         <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
-          <p className="text-sm font-medium text-slate-400">
-            Loading Search Loss overview...
+          <p className="text-sm font-medium text-slate-300">
+            Loading dashboard overview...
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Checking the latest Magento search signals.
           </p>
           <div className="mt-3 h-2 w-48 animate-pulse rounded-full bg-slate-800" />
           <div className="mt-2 h-2 w-72 max-w-full animate-pulse rounded-full bg-slate-800" />
@@ -109,12 +116,18 @@ export default function TabSearchOverview() {
       <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
         <div className="rounded-xl border border-red-500/30 bg-red-950/30 p-4">
           <h2 className="text-sm font-semibold text-red-200">
-            Search Loss overview could not be loaded
+            Dashboard overview could not be loaded
           </h2>
-          <p className="mt-2 text-xs text-red-300">{errorMessage}</p>
-          <p className="mt-2 text-xs text-red-300/90">
-            Check that the Vercel API route is running and that the Magento API
-            URL/token are set correctly.
+          <p className="mt-2 text-xs leading-5 text-red-300">
+            The dashboard could not connect to the read-only Magento data
+            source.
+          </p>
+          <p className="mt-2 text-xs leading-5 text-red-300/90">
+            No store data has been changed. Check the Magento API URL, access
+            token, and dashboard environment settings.
+          </p>
+          <p className="mt-2 text-[11px] leading-5 text-red-300/70">
+            Technical detail: {errorMessage}
           </p>
         </div>
       </section>
@@ -133,11 +146,25 @@ export default function TabSearchOverview() {
         </h1>
 
         <p className="mt-2 max-w-4xl text-xs leading-5 text-slate-300 sm:text-sm">
-          A standalone visibility layer showing where on-site search may be
-          leaking demand, which failed searches matter most, and what actions
-          could reduce missed opportunities.
+          Customers are telling you what they want. This dashboard shows where
+          the website may not be connecting that demand to useful products,
+          categories, synonyms, or search results.
         </p>
       </div>
+
+      {!hasAnySearchSignal ? (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-[0_8px_20px_rgba(2,8,23,0.22)]">
+          <h2 className="text-sm font-semibold text-white">
+            No search signal found yet
+          </h2>
+          <p className="mt-2 max-w-4xl text-xs leading-5 text-slate-400">
+            The dashboard connected successfully, but there is not enough
+            Magento search activity to show missed-demand insights yet. Once
+            searches are recorded, this overview will show volume, failed
+            searches, zero-result rate, and estimated demand at risk.
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-[0_8px_20px_rgba(2,8,23,0.22)]">
@@ -227,9 +254,9 @@ export default function TabSearchOverview() {
             Useful before a search rebuild
           </h2>
           <p className="mt-1.5 text-xs leading-5 text-slate-300">
-            Helps identify synonym gaps, product tagging issues, category
-            opportunities, and quick merchandising fixes while a wider search
-            improvement project is prepared.
+            Helps identify wording gaps, product data issues, visibility
+            problems, category opportunities, and quick Magento search fixes
+            while a wider search improvement project is prepared.
           </p>
         </div>
       </div>
