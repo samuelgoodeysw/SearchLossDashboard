@@ -27,7 +27,17 @@ type SearchLossResponse = {
   failedSearchTerms?: FailedSearchTerm[];
 };
 
-type SortMode = "revenue-desc" | "searches-desc" | "term-asc";
+type SortMode =
+  | "revenue-desc"
+  | "revenue-asc"
+  | "searches-desc"
+  | "searches-asc"
+  | "term-asc"
+  | "term-desc"
+  | "priority-desc"
+  | "priority-asc"
+  | "issue-asc"
+  | "issue-desc";
 
 function formatNumber(value?: number): string {
   if (value === undefined || value === null || Number.isNaN(value)) {
@@ -70,6 +80,19 @@ function getPriorityClasses(priority?: string): string {
       return "border-slate-600 bg-slate-800/80 text-slate-300";
     default:
       return "border-slate-600 bg-slate-800/80 text-slate-300";
+  }
+}
+
+function getPriorityRank(priority?: string): number {
+  switch ((priority || "").toLowerCase()) {
+    case "high":
+      return 3;
+    case "medium":
+      return 2;
+    case "low":
+      return 1;
+    default:
+      return 0;
   }
 }
 
@@ -509,8 +532,36 @@ export default function TabSearchDiscovery() {
         return (b.count || 0) - (a.count || 0);
       }
 
+      if (sortMode === "searches-asc") {
+        return (a.count || 0) - (b.count || 0);
+      }
+
       if (sortMode === "term-asc") {
         return a.term.localeCompare(b.term);
+      }
+
+      if (sortMode === "term-desc") {
+        return b.term.localeCompare(a.term);
+      }
+
+      if (sortMode === "revenue-asc") {
+        return (a.lostRevenue || 0) - (b.lostRevenue || 0);
+      }
+
+      if (sortMode === "priority-desc") {
+        return getPriorityRank(b.opportunityScore) - getPriorityRank(a.opportunityScore);
+      }
+
+      if (sortMode === "priority-asc") {
+        return getPriorityRank(a.opportunityScore) - getPriorityRank(b.opportunityScore);
+      }
+
+      if (sortMode === "issue-asc") {
+        return getIssueLabel(a).localeCompare(getIssueLabel(b));
+      }
+
+      if (sortMode === "issue-desc") {
+        return getIssueLabel(b).localeCompare(getIssueLabel(a));
       }
 
       return (b.lostRevenue || 0) - (a.lostRevenue || 0);
@@ -523,6 +574,23 @@ export default function TabSearchDiscovery() {
     setFixTypeFilter("all");
     setSortMode("revenue-desc");
     setExpandedTerm(null);
+  }
+
+  function toggleSort(descMode: SortMode, ascMode: SortMode) {
+    setSortMode(sortMode === descMode ? ascMode : descMode);
+    setExpandedTerm(null);
+  }
+
+  function getSortIndicator(descMode: SortMode, ascMode: SortMode): string {
+    if (sortMode === descMode) {
+      return "↓";
+    }
+
+    if (sortMode === ascMode) {
+      return "↑";
+    }
+
+    return "↕";
   }
 
   function exportCsv() {
@@ -734,9 +802,16 @@ export default function TabSearchDiscovery() {
               }}
               className="h-9 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 text-xs text-slate-100 outline-none transition focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/15"
             >
-              <option value="revenue-desc">Revenue at risk</option>
-              <option value="searches-desc">Search volume</option>
+              <option value="revenue-desc">Revenue at risk high-low</option>
+              <option value="revenue-asc">Revenue at risk low-high</option>
+              <option value="searches-desc">Search volume high-low</option>
+              <option value="searches-asc">Search volume low-high</option>
               <option value="term-asc">Term A-Z</option>
+              <option value="term-desc">Term Z-A</option>
+              <option value="priority-desc">Priority high-low</option>
+              <option value="priority-asc">Priority low-high</option>
+              <option value="issue-asc">Issue type A-Z</option>
+              <option value="issue-desc">Issue type Z-A</option>
             </select>
           </div>
 
@@ -821,31 +896,66 @@ export default function TabSearchDiscovery() {
               <thead className="bg-slate-950/60">
                 <tr>
                   <th className="w-[15%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    <TooltipLabel
-                      label="Term"
-                      tooltip="The exact words customers searched for."
-                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("term-asc", "term-desc")}
+                      className="inline-flex items-center gap-1 text-left uppercase tracking-wide text-slate-400 transition hover:text-blue-200"
+                    >
+                      <TooltipLabel
+                        label="Term"
+                        tooltip="The exact words customers searched for."
+                      />
+                      <span className="inline-flex w-3 justify-center text-[11px] leading-none text-slate-500">{getSortIndicator("term-asc", "term-desc")}</span>
+                    </button>
                   </th>
                   <th className="w-[7%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    <TooltipLabel
-                      label="Searches"
-                      tooltip="How many times customers searched this term."
-                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("searches-desc", "searches-asc")}
+                      className="inline-flex items-center gap-1 text-left uppercase tracking-wide text-slate-400 transition hover:text-blue-200"
+                    >
+                      <TooltipLabel
+                        label="Searches"
+                        tooltip="How many times customers searched this term."
+                      />
+                      <span className="inline-flex w-3 justify-center text-[11px] leading-none text-slate-500">{getSortIndicator("searches-desc", "searches-asc")}</span>
+                    </button>
                   </th>
                   <th className="w-[10%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    <TooltipLabel
-                      label="Revenue at Risk"
-                      tooltip="Searches x AOV x search-to-order rate. Directional estimate, not guaranteed lost revenue."
-                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("revenue-desc", "revenue-asc")}
+                      className="inline-flex items-center gap-1 text-left uppercase tracking-wide text-slate-400 transition hover:text-blue-200"
+                    >
+                      <TooltipLabel
+                        label="Revenue at Risk"
+                        tooltip="Searches x AOV x search-to-order rate. Directional estimate, not guaranteed lost revenue."
+                      />
+                      <span className="inline-flex w-3 justify-center text-[11px] leading-none text-slate-500">{getSortIndicator("revenue-desc", "revenue-asc")}</span>
+                    </button>
                   </th>
                   <th className="w-[8%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    <TooltipLabel
-                      label="Priority"
-                      tooltip="Based on search volume and estimated revenue at risk. High = review first."
-                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("priority-desc", "priority-asc")}
+                      className="inline-flex items-center gap-1 text-left uppercase tracking-wide text-slate-400 transition hover:text-blue-200"
+                    >
+                      <TooltipLabel
+                        label="Priority"
+                        tooltip="Based on search volume and estimated revenue at risk. High = review first."
+                      />
+                      <span className="inline-flex w-3 justify-center text-[11px] leading-none text-slate-500">{getSortIndicator("priority-desc", "priority-asc")}</span>
+                    </button>
                   </th>
                   <th className="w-[16%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    Issue Type
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("issue-asc", "issue-desc")}
+                      className="inline-flex items-center gap-1 text-left uppercase tracking-wide text-slate-400 transition hover:text-blue-200"
+                    >
+                      <span>Issue Type</span>
+                      <span className="inline-flex w-3 justify-center text-[11px] leading-none text-slate-500">{getSortIndicator("issue-asc", "issue-desc")}</span>
+                    </button>
                   </th>
                   <th className="w-[22%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                     <TooltipLabel
