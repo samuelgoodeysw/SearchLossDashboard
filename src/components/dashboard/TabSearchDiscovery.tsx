@@ -18,8 +18,8 @@ type FailedSearchTerm = {
   lostRevenue: number;
   opportunityScore: "High" | "Medium" | "Low";
   fixType: string;
-  suggestedFix: string;
   confidence: "High" | "Medium" | "Low";
+  suggestedFix: string;
   trend: "up" | "down" | "stable";
 };
 
@@ -28,10 +28,26 @@ type SearchLossResponse = {
   failedSearchTerms: FailedSearchTerm[];
 };
 
-const fmtCurrency = (n: number) =>
-  `$${n.toLocaleString(undefined, {
-    maximumFractionDigits: 0,
-  })}`;
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: value >= 100 ? 0 : 2,
+  }).format(value);
+
+const formatPercent = (value: number) => `${value.toFixed(2)}%`;
+
+const scoreClassName = (score: "High" | "Medium" | "Low") => {
+  if (score === "High") return "text-danger font-medium";
+  if (score === "Medium") return "text-warning font-medium";
+  return "text-muted-foreground";
+};
+
+const confidenceClassName = (confidence: "High" | "Medium" | "Low") => {
+  if (confidence === "High") return "text-success font-medium";
+  if (confidence === "Medium") return "text-warning font-medium";
+  return "text-muted-foreground";
+};
 
 const TabSearchDiscovery = () => {
   const [data, setData] = useState<SearchLossResponse | null>(null);
@@ -82,7 +98,7 @@ const TabSearchDiscovery = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KPICard
           title="On-Site Searches"
           value={searchData.totalSearches.toLocaleString()}
@@ -97,126 +113,132 @@ const TabSearchDiscovery = () => {
 
         <KPICard
           title="Zero-Result Rate"
-          value={`${searchData.zeroResultRate}%`}
+          value={formatPercent(searchData.zeroResultRate)}
           variant="danger"
         />
 
         <KPICard
           title="Estimated Lost Revenue"
-          value={fmtCurrency(searchData.modeledDemandLost)}
+          value={formatCurrency(searchData.modeledDemandLost)}
           variant="danger"
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="col-span-2 rounded-lg border border-border bg-card p-5">
-          <div className="mb-4">
-            <h3 className="text-[13px] font-medium text-muted-foreground">
-              Search Loss Opportunities
-            </h3>
-            <p className="mt-1 text-[12px] text-muted-foreground">
-              Ranked by estimated revenue risk, failed search volume, and likely fix type.
-            </p>
-          </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        <InsightNote text="Search is high-intent demand. These are customers telling the store exactly what they want, but Magento is not successfully matching them to products." />
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[950px] text-[12px]">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Search Term
-                  </th>
-                  <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Count
-                  </th>
-                  <th className="pb-2 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Lost Revenue
-                  </th>
-                  <th className="pb-2 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Opportunity
-                  </th>
-                  <th className="pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Fix Type
-                  </th>
-                  <th className="pb-2 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Confidence
-                  </th>
-                  <th className="pb-2 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Suggested Fix
-                  </th>
-                </tr>
-              </thead>
+        <InsightNote
+          variant="warning"
+          text={`${formatPercent(
+            searchData.zeroResultRate
+          )} of recorded searches currently return zero results. That represents ${searchData.failedSearches.toLocaleString()} failed search events from ${searchData.totalSearches.toLocaleString()} total searches.`}
+        />
 
-              <tbody>
-                {failedSearchTerms.map((s) => (
-                  <tr key={s.term} className="border-b border-border last:border-0">
-                    <td className="max-w-[150px] py-3 pr-3 font-mono text-[11px] text-foreground">
-                      "{s.term}"
-                    </td>
+        <InsightNote
+          text={`Estimated lost revenue is modeled from failed searches, average order value (${formatCurrency(
+            searchData.averageOrderValue
+          )}), and observed search-to-order rate (${formatPercent(
+            searchData.searchToOrderRate
+          )}). Treat this as directional revenue recovery potential, not exact accounting.`}
+        />
+      </div>
 
-                    <td className="py-3 text-right text-foreground">
-                      {s.count.toLocaleString()}
-                    </td>
-
-                    <td className="py-3 text-right font-medium text-danger">
-                      {fmtCurrency(s.lostRevenue)}
-                    </td>
-
-                    <td className="py-3 text-center">
-                      <span
-                        className={
-                          s.opportunityScore === "High"
-                            ? "text-danger font-medium"
-                            : s.opportunityScore === "Medium"
-                            ? "text-warning font-medium"
-                            : "text-muted-foreground"
-                        }
-                      >
-                        {s.opportunityScore}
-                      </span>
-                    </td>
-
-                    <td className="max-w-[160px] py-3 pl-3 text-left text-foreground">
-                      {s.fixType}
-                    </td>
-
-                    <td className="py-3 text-center">
-                      <span
-                        className={
-                          s.confidence === "High"
-                            ? "text-success font-medium"
-                            : s.confidence === "Medium"
-                            ? "text-warning font-medium"
-                            : "text-muted-foreground"
-                        }
-                      >
-                        {s.confidence}
-                      </span>
-                    </td>
-
-                    <td className="max-w-[360px] py-3 pl-3 text-left text-muted-foreground">
-                      {s.suggestedFix}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <div className="rounded-lg border border-border bg-card p-5">
+        <div className="mb-5">
+          <h3 className="text-[13px] font-medium text-muted-foreground">
+            Search Loss Opportunities
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Ranked by estimated revenue risk, failed search volume, and likely
+            fix type.
+          </p>
         </div>
 
-        <div className="space-y-3">
-          <InsightNote text="Search is high-intent demand. These are customers telling the store exactly what they want, but Magento is not successfully matching them to products." />
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1180px] table-fixed text-[12px]">
+            <colgroup>
+              <col className="w-[170px]" />
+              <col className="w-[80px]" />
+              <col className="w-[115px]" />
+              <col className="w-[115px]" />
+              <col className="w-[190px]" />
+              <col className="w-[115px]" />
+              <col />
+            </colgroup>
 
-          <InsightNote
-            variant="warning"
-            text={`${searchData.zeroResultRate}% of recorded searches currently return zero results. That represents ${searchData.failedSearches.toLocaleString()} failed search events from ${searchData.totalSearches.toLocaleString()} total searches.`}
-          />
+            <thead>
+              <tr className="border-b border-border">
+                <th className="whitespace-nowrap pb-3 pr-4 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Term
+                </th>
 
-          <InsightNote
-            text={`Estimated lost revenue is modeled from failed searches, average order value (${fmtCurrency(
-              searchData.averageOrderValue
-            )}), and observed search-to-order rate (${searchData.searchToOrderRate}%). Treat this as directional revenue recovery potential, not exact accounting.`}
-          />
+                <th className="whitespace-nowrap pb-3 pr-4 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Searches
+                </th>
+
+                <th className="whitespace-nowrap pb-3 pr-4 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Lost Rev.
+                </th>
+
+                <th className="whitespace-nowrap pb-3 pr-4 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Priority
+                </th>
+
+                <th className="whitespace-nowrap pb-3 pr-4 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Fix Type
+                </th>
+
+                <th className="whitespace-nowrap pb-3 pr-4 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Confidence
+                </th>
+
+                <th className="whitespace-nowrap pb-3 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Suggested Action
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {failedSearchTerms.map((term) => (
+                <tr
+                  key={term.term}
+                  className="border-b border-border align-top last:border-0"
+                >
+                  <td className="py-4 pr-4 font-mono text-[11px] leading-relaxed text-foreground">
+                    "{term.term}"
+                  </td>
+
+                  <td className="py-4 pr-4 text-right text-foreground">
+                    {term.count.toLocaleString()}
+                  </td>
+
+                  <td className="py-4 pr-4 text-right font-medium text-danger">
+                    {formatCurrency(term.lostRevenue)}
+                  </td>
+
+                  <td className="py-4 pr-4 text-center">
+                    <span className={scoreClassName(term.opportunityScore)}>
+                      {term.opportunityScore}
+                    </span>
+                  </td>
+
+                  <td className="py-4 pr-4 font-medium leading-relaxed text-foreground">
+                    {term.fixType}
+                  </td>
+
+                  <td className="py-4 pr-4 text-center">
+                    <span className={confidenceClassName(term.confidence)}>
+                      {term.confidence}
+                    </span>
+                  </td>
+
+                  <td className="py-4 leading-relaxed text-muted-foreground">
+                    {term.suggestedFix}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
