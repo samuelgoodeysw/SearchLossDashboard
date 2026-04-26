@@ -892,6 +892,26 @@ export default function TabSearchDiscovery() {
                       {isExpanded ? (
                         <tr>
                           <td colSpan={8} className="bg-slate-950/35 px-4 py-4">
+                            <div className="mb-4 flex flex-wrap gap-2">
+                              <span className="inline-flex rounded-full border border-blue-500/25 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-100">
+                                Issue Type: {getIssueLabel(item)}
+                              </span>
+                              <span
+                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getPriorityClasses(
+                                  item.opportunityScore
+                                )}`}
+                              >
+                                Priority: {item.opportunityScore || "Review"}
+                              </span>
+                              <span className="inline-flex rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-semibold text-slate-300">
+                                Searches: {formatNumber(item.count)}
+                              </span>
+                              <span className="inline-flex rounded-full border border-blue-500/25 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-100">
+                                Revenue at Risk:{" "}
+                                {formatCurrency(item.lostRevenue)}
+                              </span>
+                            </div>
+
                             <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
                               <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
                                 <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-300/80">
@@ -911,7 +931,7 @@ export default function TabSearchDiscovery() {
 
                               <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
                                 <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-300/80">
-                                  Magento fixes to check
+                                  Magento checks / fixes
                                 </p>
                                 <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-300">
                                   {getMagentoFixSteps(item).map((step) => (
