@@ -123,32 +123,20 @@ export default function TabSearchOverview() {
 
   return (
     <section className="space-y-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
-      <div className="grid gap-3 xl:grid-cols-[1.5fr_0.8fr]">
-        <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/70 p-4 shadow-[0_8px_24px_rgba(2,8,23,0.25)]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-300/80">
-            {clientConfig.productName}
-          </p>
+      <div className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/70 p-4 shadow-[0_8px_24px_rgba(2,8,23,0.25)]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-300/80">
+          {clientConfig.productName}
+        </p>
 
-          <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-            Magento search visibility dashboard
-          </h1>
+        <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-white sm:text-2xl">
+          Magento search visibility dashboard
+        </h1>
 
-          <p className="mt-2 max-w-4xl text-xs leading-5 text-slate-300 sm:text-sm">
-            A standalone read-only visibility layer showing where on-site search
-            may be leaking demand, which failed searches matter most, and what
-            actions could reduce missed opportunities.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 shadow-[0_8px_24px_rgba(2,8,23,0.25)]">
-          <p className="text-sm font-semibold text-emerald-200">
-            Read-only Magento connection
-          </p>
-          <p className="mt-1.5 text-xs leading-5 text-emerald-100/85">
-            No products, orders, customers, checkout, search settings, or
-            storefront behaviour are changed.
-          </p>
-        </div>
+        <p className="mt-2 max-w-4xl text-xs leading-5 text-slate-300 sm:text-sm">
+          A standalone visibility layer showing where on-site search may be
+          leaking demand, which failed searches matter most, and what actions
+          could reduce missed opportunities.
+        </p>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -244,15 +232,6 @@ export default function TabSearchOverview() {
             improvement project is prepared.
           </p>
         </div>
-      </div>
-
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3 text-xs leading-5 text-slate-300 shadow-[0_8px_20px_rgba(2,8,23,0.22)]">
-        <span className="font-semibold text-white">
-          What this dashboard does not do:
-        </span>{" "}
-        it does not modify the Magento catalogue, write order/customer data,
-        change search configuration, affect checkout, or alter the live customer
-        experience.
       </div>
     </section>
   );

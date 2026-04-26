@@ -5,7 +5,7 @@ export const clientConfig = {
   productName: "Search Loss",
   dashboardTitle: "Magento Search Intelligence",
   dashboardSubtitle:
-    "Standalone visibility for failed searches, missed demand, and revenue opportunities — without changing the live Magento store.",
+    "Standalone visibility for failed searches, missed demand, and revenue opportunities.",
 
   locale: "en-US",
   currency: "USD",
