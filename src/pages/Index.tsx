@@ -82,7 +82,7 @@ export default function Index() {
             <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-xs text-blue-100 lg:max-w-md">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-200">
-                  Active
+                  READ-ONLY
                 </span>
                 <p className="font-semibold text-blue-100">
                   Magento API connection
