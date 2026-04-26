@@ -27,6 +27,8 @@ type SearchLossResponse = {
   failedSearchTerms?: FailedSearchTerm[];
 };
 
+type SortMode = "revenue-desc" | "searches-desc" | "term-asc";
+
 function formatNumber(value?: number): string {
   if (value === undefined || value === null || Number.isNaN(value)) {
     return "0";
@@ -77,6 +79,11 @@ export default function TabSearchDiscovery() {
   const [data, setData] = useState<SearchLossResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [fixTypeFilter, setFixTypeFilter] = useState("all");
+  const [sortMode, setSortMode] = useState<SortMode>("revenue-desc");
 
   useEffect(() => {
     let isMounted = true;
@@ -134,6 +141,58 @@ export default function TabSearchDiscovery() {
       return currentRevenue > highestRevenue ? current : highest;
     }, failedSearchTerms[0]);
   }, [failedSearchTerms]);
+
+  const fixTypeOptions = useMemo(() => {
+    const uniqueFixTypes = new Set<string>();
+
+    failedSearchTerms.forEach((item) => {
+      if (item.fixType) {
+        uniqueFixTypes.add(item.fixType);
+      }
+    });
+
+    return Array.from(uniqueFixTypes).sort((a, b) => a.localeCompare(b));
+  }, [failedSearchTerms]);
+
+  const filteredTerms = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    const filtered = failedSearchTerms.filter((item) => {
+      const matchesSearch =
+        !query ||
+        item.term.toLowerCase().includes(query) ||
+        (item.fixType || "").toLowerCase().includes(query) ||
+        (item.suggestedFix || "").toLowerCase().includes(query);
+
+      const matchesPriority =
+        priorityFilter === "all" ||
+        (item.opportunityScore || "").toLowerCase() === priorityFilter;
+
+      const matchesFixType =
+        fixTypeFilter === "all" || item.fixType === fixTypeFilter;
+
+      return matchesSearch && matchesPriority && matchesFixType;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (sortMode === "searches-desc") {
+        return (b.count || 0) - (a.count || 0);
+      }
+
+      if (sortMode === "term-asc") {
+        return a.term.localeCompare(b.term);
+      }
+
+      return (b.lostRevenue || 0) - (a.lostRevenue || 0);
+    });
+  }, [failedSearchTerms, searchQuery, priorityFilter, fixTypeFilter, sortMode]);
+
+  function clearFilters() {
+    setSearchQuery("");
+    setPriorityFilter("all");
+    setFixTypeFilter("all");
+    setSortMode("revenue-desc");
+  }
 
   if (loading) {
     return (
@@ -222,6 +281,82 @@ export default function TabSearchDiscovery() {
         </div>
       </div>
 
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3 shadow-[0_8px_20px_rgba(2,8,23,0.22)]">
+        <div className="grid gap-2 lg:grid-cols-[1.3fr_0.8fr_1fr_0.8fr_auto]">
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              Search terms
+            </label>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search ny customer search term..."
+              className="h-9 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 text-xs text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/15"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              Priority
+            </label>
+            <select
+              value={priorityFilter}
+              onChange={(event) => setPriorityFilter(event.target.value)}
+              className="h-9 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 text-xs text-slate-100 outline-none transition focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/15"
+            >
+              <option value="all">All priorities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              Fix type
+            </label>
+            <select
+              value={fixTypeFilter}
+              onChange={(event) => setFixTypeFilter(event.target.value)}
+              className="h-9 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 text-xs text-slate-100 outline-none transition focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/15"
+            >
+              <option value="all">All fix types</option>
+              {fixTypeOptions.map((fixType) => (
+                <option key={fixType} value={fixType}>
+                  {fixType}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              Sort by
+            </label>
+            <select
+              value={sortMode}
+              onChange={(event) => setSortMode(event.target.value as SortMode)}
+              className="h-9 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 text-xs text-slate-100 outline-none transition focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/15"
+            >
+              <option value="revenue-desc">Revenue at risk</option>
+              <option value="searches-desc">Search volume</option>
+              <option value="term-asc">Term A-Z</option>
+            </select>
+          </div>
+
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="h-9 rounded-xl border border-slate-700 px-3 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:bg-slate-800"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 shadow-[0_8px_24px_rgba(2,8,23,0.25)]">
         <div className="border-b border-slate-800 bg-slate-900/95 px-4 py-3">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -236,14 +371,15 @@ export default function TabSearchDiscovery() {
             </div>
 
             <p className="text-xs text-slate-500">
-              {formatNumber(failedSearchTerms.length)} terms shown
+              Showing {formatNumber(filteredTerms.length)} of{" "}
+              {formatNumber(failedSearchTerms.length)} terms
             </p>
           </div>
         </div>
 
-        {failedSearchTerms.length === 0 ? (
+        {filteredTerms.length === 0 ? (
           <div className="p-5 text-xs text-slate-300">
-            No failed search terms were returned by the API.
+            No failed search terms match the current filters.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -275,7 +411,7 @@ export default function TabSearchDiscovery() {
               </thead>
 
               <tbody className="divide-y divide-slate-800">
-                {failedSearchTerms.map((item) => (
+                {filteredTerms.map((item) => (
                   <tr
                     key={item.term}
                     className="align-top transition-colors hover:bg-slate-800/50"
