@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { clientConfig } from "@/config/client";
 
 type SearchData = {
   totalSearches?: number;
@@ -31,7 +32,7 @@ function formatNumber(value?: number): string {
     return "0";
   }
 
-  return new Intl.NumberFormat("en-US").format(value);
+  return new Intl.NumberFormat(clientConfig.locale).format(value);
 }
 
 function formatCurrency(value?: number): string {
@@ -39,9 +40,9 @@ function formatCurrency(value?: number): string {
     return "$0";
   }
 
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(clientConfig.locale, {
     style: "currency",
-    currency: "USD",
+    currency: clientConfig.currency,
     maximumFractionDigits: 0,
   }).format(value);
 }
@@ -136,13 +137,13 @@ export default function TabSearchDiscovery() {
 
   if (loading) {
     return (
-      <section className="space-y-6 rounded-[28px] border border-slate-800 bg-slate-950/60 p-6">
-        <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-[0_8px_30px_rgba(2,8,23,0.35)]">
+      <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
           <p className="text-sm font-medium text-slate-400">
             Loading failed search opportunities...
           </p>
-          <div className="mt-4 h-3 w-64 animate-pulse rounded-full bg-slate-800" />
-          <div className="mt-3 h-3 w-96 max-w-full animate-pulse rounded-full bg-slate-800" />
+          <div className="mt-3 h-2 w-48 animate-pulse rounded-full bg-slate-800" />
+          <div className="mt-2 h-2 w-72 max-w-full animate-pulse rounded-full bg-slate-800" />
         </div>
       </section>
     );
@@ -150,13 +151,13 @@ export default function TabSearchDiscovery() {
 
   if (errorMessage) {
     return (
-      <section className="space-y-6 rounded-[28px] border border-slate-800 bg-slate-950/60 p-6">
-        <div className="rounded-3xl border border-red-500/30 bg-red-950/30 p-8 shadow-[0_8px_30px_rgba(2,8,23,0.35)]">
-          <h2 className="text-lg font-semibold text-red-200">
+      <section className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
+        <div className="rounded-xl border border-red-500/30 bg-red-950/30 p-4">
+          <h2 className="text-sm font-semibold text-red-200">
             Failed search opportunities could not be loaded
           </h2>
-          <p className="mt-2 text-sm text-red-300">{errorMessage}</p>
-          <p className="mt-4 text-sm text-red-300/90">
+          <p className="mt-2 text-xs text-red-300">{errorMessage}</p>
+          <p className="mt-2 text-xs text-red-300/90">
             Check that the Vercel API route is running and that the Magento API
             URL/token are set correctly.
           </p>
@@ -166,93 +167,82 @@ export default function TabSearchDiscovery() {
   }
 
   return (
-    <section className="space-y-6 rounded-[28px] border border-slate-800 bg-slate-950/60 p-6">
-      <div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/70 p-7 shadow-[0_8px_30px_rgba(2,8,23,0.35)]">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div className="max-w-4xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-300/80">
-              Opportunities
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              Failed search opportunities
-            </h1>
-            <p className="mt-4 text-base leading-8 text-slate-300 sm:text-lg">
-              Ranked search terms where customer intent appears to be unmatched.
-              Use this view to decide which search, catalogue, synonym, redirect,
-              or merchandising fixes should be reviewed first.
-            </p>
-          </div>
-
-          {topOpportunityTerm ? (
-            <div className="max-w-md rounded-2xl border border-blue-500/20 bg-blue-500/10 px-5 py-4 shadow-[0_6px_24px_rgba(2,8,23,0.25)]">
-              <p className="text-sm font-medium text-blue-200/80">
-                Top opportunity
-              </p>
-              <p className="mt-2 text-lg font-semibold text-white">
-                {topOpportunityTerm.term}
-              </p>
-              <p className="mt-1 text-sm text-blue-100/75">
-                {formatCurrency(topOpportunityTerm.lostRevenue)} estimated
-                revenue at risk.
-              </p>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-[0_8px_24px_rgba(2,8,23,0.25)]">
-          <p className="text-sm font-medium text-slate-400">
-            Failed Searches
+    <section className="space-y-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-3">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-[0_8px_20px_rgba(2,8,23,0.22)]">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+            Ranked Terms
           </p>
-          <p className="mt-3 text-4xl font-semibold tracking-tight text-white">
-            {formatNumber(searchData.failedSearches)}
-          </p>
-          <p className="mt-3 text-sm leading-6 text-slate-400">
-            Total failed searches currently visible in Magento data.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-[0_8px_24px_rgba(2,8,23,0.25)]">
-          <p className="text-sm font-medium text-slate-400">
-            Opportunity Terms
-          </p>
-          <p className="mt-3 text-4xl font-semibold tracking-tight text-white">
+          <p className="mt-1.5 text-2xl font-semibold tracking-tight text-white">
             {formatNumber(failedSearchTerms.length)}
           </p>
-          <p className="mt-3 text-sm leading-6 text-slate-400">
-            Ranked terms with likely missed-demand opportunities.
+          <p className="mt-1.5 text-xs leading-5 text-slate-400">
+            Search terms prioritised for review.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-slate-900 to-blue-950/60 p-5 shadow-[0_8px_24px_rgba(2,8,23,0.25)]">
-          <p className="text-sm font-medium text-slate-300">
-            Estimated Revenue at Risk
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-[0_8px_20px_rgba(2,8,23,0.22)]">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+            Failed Searches
           </p>
-          <p className="mt-3 text-4xl font-semibold tracking-tight text-white">
+          <p className="mt-1.5 text-2xl font-semibold tracking-tight text-white">
+            {formatNumber(searchData.failedSearches)}
+          </p>
+          <p className="mt-1.5 text-xs leading-5 text-slate-400">
+            Failed searches visible in Magento data.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 shadow-[0_8px_20px_rgba(2,8,23,0.22)]">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-blue-200/80">
+            Top Opportunity
+          </p>
+          <p className="mt-1.5 truncate text-2xl font-semibold tracking-tight text-white">
+            {topOpportunityTerm?.term || "None yet"}
+          </p>
+          <p className="mt-1.5 text-xs leading-5 text-blue-100/75">
+            {topOpportunityTerm
+              ? `${formatCurrency(
+                  topOpportunityTerm.lostRevenue
+                )} estimated revenue at risk.`
+              : "No failed search opportunity returned yet."}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-slate-900 to-blue-950/60 p-4 shadow-[0_8px_20px_rgba(2,8,23,0.22)]">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-300">
+            Revenue at Risk
+          </p>
+          <p className="mt-1.5 text-2xl font-semibold tracking-tight text-white">
             {formatCurrency(searchData.modeledDemandLost)}
           </p>
-          <p className="mt-3 text-sm leading-6 text-slate-300/80">
-            Directional value across failed search demand.
+          <p className="mt-1.5 text-xs leading-5 text-slate-300/80">
+            Directional value across failed demand.
           </p>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/80 shadow-[0_8px_30px_rgba(2,8,23,0.35)]">
-        <div className="border-b border-slate-800 bg-slate-900/95 p-6">
-          <div className="max-w-3xl">
-            <h2 className="text-2xl font-semibold tracking-tight text-white">
-              Ranked search fixes
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              Each row combines demand signal, estimated revenue at risk,
-              likely fix type, confidence, and a suggested next action.
+      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 shadow-[0_8px_24px_rgba(2,8,23,0.25)]">
+        <div className="border-b border-slate-800 bg-slate-900/95 px-4 py-3">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold tracking-tight text-white">
+                Ranked search fixes
+              </h2>
+              <p className="mt-1 text-xs leading-5 text-slate-400">
+                Demand signal, revenue at risk, likely fix type, confidence, and
+                suggested next action.
+              </p>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              {formatNumber(failedSearchTerms.length)} terms shown
             </p>
           </div>
         </div>
 
         {failedSearchTerms.length === 0 ? (
-          <div className="p-8 text-sm text-slate-300">
+          <div className="p-5 text-xs text-slate-300">
             No failed search terms were returned by the API.
           </div>
         ) : (
@@ -260,25 +250,25 @@ export default function TabSearchDiscovery() {
             <table className="min-w-full table-fixed divide-y divide-slate-800">
               <thead className="bg-slate-950/60">
                 <tr>
-                  <th className="w-[18%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <th className="w-[18%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                     Term
                   </th>
-                  <th className="w-[9%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <th className="w-[9%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                     Searches
                   </th>
-                  <th className="w-[11%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <th className="w-[11%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                     Revenue at Risk
                   </th>
-                  <th className="w-[10%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <th className="w-[10%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                     Priority
                   </th>
-                  <th className="w-[16%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <th className="w-[16%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                     Fix Type
                   </th>
-                  <th className="w-[10%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <th className="w-[10%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                     Confidence
                   </th>
-                  <th className="w-[26%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <th className="w-[26%] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                     Suggested Action
                   </th>
                 </tr>
@@ -290,26 +280,28 @@ export default function TabSearchDiscovery() {
                     key={item.term}
                     className="align-top transition-colors hover:bg-slate-800/50"
                   >
-                    <td className="px-5 py-5">
-                      <p className="font-semibold text-white">{item.term}</p>
+                    <td className="px-4 py-3">
+                      <p className="text-sm font-semibold text-white">
+                        {item.term}
+                      </p>
                       {item.trend ? (
-                        <p className="mt-1 text-xs text-slate-400">
+                        <p className="mt-0.5 text-[11px] text-slate-500">
                           Trend: {item.trend}
                         </p>
                       ) : null}
                     </td>
 
-                    <td className="px-5 py-5 text-sm font-medium text-slate-200">
+                    <td className="px-4 py-3 text-xs font-medium text-slate-200">
                       {formatNumber(item.count)}
                     </td>
 
-                    <td className="px-5 py-5 text-sm font-semibold text-white">
+                    <td className="px-4 py-3 text-xs font-semibold text-white">
                       {formatCurrency(item.lostRevenue)}
                     </td>
 
-                    <td className="px-5 py-5">
+                    <td className="px-4 py-3">
                       <span
-                        className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getPriorityClasses(
+                        className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getPriorityClasses(
                           item.opportunityScore
                         )}`}
                       >
@@ -317,13 +309,13 @@ export default function TabSearchDiscovery() {
                       </span>
                     </td>
 
-                    <td className="px-5 py-5 text-sm text-slate-300">
+                    <td className="px-4 py-3 text-xs leading-5 text-slate-300">
                       {item.fixType || "Review required"}
                     </td>
 
-                    <td className="px-5 py-5">
+                    <td className="px-4 py-3">
                       <span
-                        className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getConfidenceClasses(
+                        className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getConfidenceClasses(
                           item.confidence
                         )}`}
                       >
@@ -331,7 +323,7 @@ export default function TabSearchDiscovery() {
                       </span>
                     </td>
 
-                    <td className="px-5 py-5 text-sm leading-6 text-slate-300">
+                    <td className="px-4 py-3 text-xs leading-5 text-slate-300">
                       {item.suggestedFix || "Review this search term manually."}
                     </td>
                   </tr>
