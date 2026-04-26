@@ -49,6 +49,17 @@ function formatCurrency(value?: number): string {
   }).format(value);
 }
 
+function escapeCsvValue(value: string | number | undefined | null): string {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  const stringValue = String(value);
+  const escapedValue = stringValue.replace(/"/g, '""');
+
+  return `"${escapedValue}"`;
+}
+
 function getPriorityClasses(priority?: string): string {
   switch ((priority || "").toLowerCase()) {
     case "high":
@@ -158,11 +169,7 @@ export default function TabSearchDiscovery() {
     const query = searchQuery.trim().toLowerCase();
 
     const filtered = failedSearchTerms.filter((item) => {
-      const matchesSearch =
-        !query ||
-        item.term.toLowerCase().includes(query) ||
-        (item.fixType || "").toLowerCase().includes(query) ||
-        (item.suggestedFix || "").toLowerCase().includes(query);
+      const matchesSearch = !query || item.term.toLowerCase().includes(query);
 
       const matchesPriority =
         priorityFilter === "all" ||
@@ -192,6 +199,49 @@ export default function TabSearchDiscovery() {
     setPriorityFilter("all");
     setFixTypeFilter("all");
     setSortMode("revenue-desc");
+  }
+
+  function exportCsv() {
+    const headers = [
+      "Term",
+      "Searches",
+      "Revenue at Risk",
+      "Priority",
+      "Fix Type",
+      "Confidence",
+      "Trend",
+      "Suggested Action",
+    ];
+
+    const rows = filteredTerms.map((item) => [
+      item.term,
+      item.count,
+      item.lostRevenue || 0,
+      item.opportunityScore || "Review",
+      item.fixType || "Review required",
+      item.confidence || "Unknown",
+      item.trend || "",
+      item.suggestedFix || "Review this search term manually.",
+    ]);
+
+    const csvContent = [
+      headers.map(escapeCsvValue).join(","),
+      ...rows.map((row) => row.map(escapeCsvValue).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = `search-loss-opportunities-${date}.csv`;
+    link.click();
+
+    URL.revokeObjectURL(url);
   }
 
   if (loading) {
@@ -282,7 +332,7 @@ export default function TabSearchDiscovery() {
       </div>
 
       <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3 shadow-[0_8px_20px_rgba(2,8,23,0.22)]">
-        <div className="grid gap-2 lg:grid-cols-[1.3fr_0.8fr_1fr_0.8fr_auto]">
+        <div className="grid gap-2 lg:grid-cols-[1.3fr_0.8fr_1fr_0.8fr_auto_auto]">
           <div>
             <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-500">
               Search terms
@@ -291,7 +341,7 @@ export default function TabSearchDiscovery() {
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search ny customer search term..."
+              placeholder="Search by customer search term..."
               className="h-9 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 text-xs text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/15"
             />
           </div>
@@ -352,6 +402,17 @@ export default function TabSearchDiscovery() {
               className="h-9 rounded-xl border border-slate-700 px-3 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:bg-slate-800"
             >
               Reset
+            </button>
+          </div>
+
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={exportCsv}
+              disabled={filteredTerms.length === 0}
+              className="h-9 rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 text-xs font-semibold text-blue-100 transition hover:border-blue-400/60 hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-600"
+            >
+              Export CSV
             </button>
           </div>
         </div>
