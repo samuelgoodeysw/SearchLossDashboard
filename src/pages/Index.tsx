@@ -85,7 +85,7 @@ export default function Index() {
                   Active
                 </span>
                 <p className="font-semibold text-blue-100">
-                  Read-only Magento API
+                  Magento API connection
                 </p>
               </div>
 
