@@ -1,60 +1,101 @@
 import { useState } from "react";
+import TabSearchOverview from "@/components/dashboard/TabSearchOverview";
 import TabSearchDiscovery from "@/components/dashboard/TabSearchDiscovery";
 
-const tabs = [
-  { id: "search", label: "Search & Discovery" },
-] as const;
+type DashboardTab = "overview" | "search";
 
-type TabId = (typeof tabs)[number]["id"];
+const tabs: Array<{
+  id: DashboardTab;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: "overview",
+    label: "Overview",
+    description: "Quick view of search demand, risk, and read-only setup.",
+  },
+  {
+    id: "search",
+    label: "Opportunities",
+    description: "Ranked failed searches, likely fix types, and suggested actions.",
+  },
+];
 
-const Index = () => {
-  const [activeTab, setActiveTab] = useState<TabId>("search");
+export default function Index() {
+  const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card px-6 py-3.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15">
-              <span className="text-sm font-bold text-primary">SC</span>
-            </div>
+    <main className="min-h-screen bg-slate-950 text-white">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-4 py-6 sm:px-6 lg:px-8">
+        <header className="mb-6 rounded-[28px] border border-slate-800 bg-slate-900/70 p-5 shadow-[0_12px_40px_rgba(2,8,23,0.35)]">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="text-sm font-semibold text-foreground tracking-tight">Summit Chassis Supply</h1>
-              <p className="text-[11px] text-muted-foreground">Operating Dashboard</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-300/80">
+                Search Loss
+              </p>
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                Magento Search Intelligence
+              </h1>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                Standalone visibility for failed searches, missed demand, and
+                revenue opportunities — without changing the live Magento store.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-100">
+              <p className="font-semibold text-blue-100">Read-only dashboard</p>
+              <p className="mt-1 text-blue-100/75">
+                No storefront, checkout, catalogue, or order data is modified.
+              </p>
             </div>
           </div>
-          <div className="text-right text-[11px] text-muted-foreground">
-            <p>Last updated: Jun 13, 2025 · 08:42 AM CT</p>
+        </header>
+
+        <nav className="mb-6 rounded-[24px] border border-slate-800 bg-slate-900/70 p-2 shadow-[0_10px_30px_rgba(2,8,23,0.25)]">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={
+                    isActive
+                      ? "rounded-2xl border border-blue-500/30 bg-blue-500/15 px-4 py-4 text-left shadow-[0_8px_24px_rgba(2,8,23,0.25)]"
+                      : "rounded-2xl border border-transparent px-4 py-4 text-left transition hover:border-slate-700 hover:bg-slate-800/60"
+                  }
+                >
+                  <span
+                    className={
+                      isActive
+                        ? "block text-sm font-semibold text-blue-200"
+                        : "block text-sm font-semibold text-slate-300"
+                    }
+                  >
+                    {tab.label}
+                  </span>
+                  <span
+                    className={
+                      isActive
+                        ? "mt-1 block text-xs leading-5 text-blue-100/75"
+                        : "mt-1 block text-xs leading-5 text-slate-500"
+                    }
+                  >
+                    {tab.description}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        </div>
-      </header>
+        </nav>
 
-      {/* Tab Navigation */}
-      <nav className="border-b border-border bg-card px-6">
-        <div className="flex gap-0.5">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2.5 text-[13px] font-medium transition-colors ${
-                activeTab === tab.id
-                  ? "border-b-2 border-primary text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="flex-1">
+          {activeTab === "overview" && <TabSearchOverview />}
+          {activeTab === "search" && <TabSearchDiscovery />}
         </div>
-      </nav>
-
-      {/* Content */}
-      <main className="mx-auto max-w-[1440px] p-6">
-        {activeTab === "search" && <TabSearchDiscovery />}
-      </main>
-    </div>
+      </div>
+    </main>
   );
-};
-
-export default Index;
+}

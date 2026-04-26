@@ -1,248 +1,346 @@
-import { useEffect, useState } from "react";
-import KPICard from "./KPICard";
-import InsightNote from "./InsightNote";
+import { useEffect, useMemo, useState } from "react";
 
 type SearchData = {
-  totalSearches: number;
-  failedSearches: number;
-  zeroResultRate: number;
-  searchToOrderRate: number;
-  averageOrderValue: number;
-  modeledDemandLost: number;
+  totalSearches?: number;
+  failedSearches?: number;
+  zeroResultRate?: number;
+  searchToOrderRate?: number;
+  averageOrderValue?: number;
+  modeledDemandLost?: number;
 };
 
 type FailedSearchTerm = {
   term: string;
   count: number;
-  conversion: number;
-  lostRevenue: number;
-  opportunityScore: "High" | "Medium" | "Low";
-  fixType: string;
-  confidence: "High" | "Medium" | "Low";
-  suggestedFix: string;
-  trend: "up" | "down" | "stable";
+  conversion?: number;
+  lostRevenue?: number;
+  opportunityScore?: string;
+  fixType?: string;
+  suggestedFix?: string;
+  confidence?: string;
+  trend?: string;
 };
 
 type SearchLossResponse = {
-  searchData: SearchData;
-  failedSearchTerms: FailedSearchTerm[];
+  searchData?: SearchData;
+  failedSearchTerms?: FailedSearchTerm[];
 };
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("en-US", {
+function formatNumber(value?: number): string {
+  if (value === undefined || value === null || Number.isNaN(value)) {
+    return "0";
+  }
+
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
+function formatCurrency(value?: number): string {
+  if (value === undefined || value === null || Number.isNaN(value)) {
+    return "$0";
+  }
+
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: value >= 100 ? 0 : 2,
+    maximumFractionDigits: 0,
   }).format(value);
+}
 
-const formatPercent = (value: number) => `${value.toFixed(2)}%`;
+function getPriorityClasses(priority?: string): string {
+  switch ((priority || "").toLowerCase()) {
+    case "high":
+      return "border-red-500/30 bg-red-500/10 text-red-300";
+    case "medium":
+      return "border-amber-500/30 bg-amber-500/10 text-amber-300";
+    case "low":
+      return "border-slate-600 bg-slate-800/80 text-slate-300";
+    default:
+      return "border-slate-600 bg-slate-800/80 text-slate-300";
+  }
+}
 
-const scoreClassName = (score: "High" | "Medium" | "Low") => {
-  if (score === "High") return "text-danger font-medium";
-  if (score === "Medium") return "text-warning font-medium";
-  return "text-muted-foreground";
-};
+function getConfidenceClasses(confidence?: string): string {
+  switch ((confidence || "").toLowerCase()) {
+    case "high":
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+    case "medium":
+      return "border-blue-500/30 bg-blue-500/10 text-blue-300";
+    case "low":
+      return "border-slate-600 bg-slate-800/80 text-slate-300";
+    default:
+      return "border-slate-600 bg-slate-800/80 text-slate-300";
+  }
+}
 
-const confidenceClassName = (confidence: "High" | "Medium" | "Low") => {
-  if (confidence === "High") return "text-success font-medium";
-  if (confidence === "Medium") return "text-warning font-medium";
-  return "text-muted-foreground";
-};
-
-const TabSearchDiscovery = () => {
+export default function TabSearchDiscovery() {
   const [data, setData] = useState<SearchLossResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    async function loadSearchLossData() {
+    let isMounted = true;
+
+    async function fetchSearchLossData() {
       try {
+        setLoading(true);
+        setErrorMessage("");
+
         const response = await fetch("/api/search-loss");
 
         if (!response.ok) {
-          throw new Error("Failed to load Search Loss data");
+          throw new Error(`Search Loss API returned ${response.status}`);
         }
 
-        const result = await response.json();
-        setData(result);
+        const payload = (await response.json()) as SearchLossResponse;
+
+        if (isMounted) {
+          setData(payload);
+        }
       } catch (error) {
-        setErrorMessage("Unable to load Search Loss data from Magento.");
+        if (isMounted) {
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : "Unable to load Search Loss data."
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 
-    loadSearchLossData();
+    fetchSearchLossData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  if (isLoading) {
+  const searchData = data?.searchData || {};
+  const failedSearchTerms = data?.failedSearchTerms || [];
+
+  const topOpportunityTerm = useMemo(() => {
+    if (!failedSearchTerms.length) {
+      return null;
+    }
+
+    return failedSearchTerms.reduce((highest, current) => {
+      const highestRevenue = highest.lostRevenue || 0;
+      const currentRevenue = current.lostRevenue || 0;
+
+      return currentRevenue > highestRevenue ? current : highest;
+    }, failedSearchTerms[0]);
+  }, [failedSearchTerms]);
+
+  if (loading) {
     return (
-      <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-        Loading Search Loss data from Magento...
-      </div>
+      <section className="space-y-6 rounded-[28px] border border-slate-800 bg-slate-950/60 p-6">
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-[0_8px_30px_rgba(2,8,23,0.35)]">
+          <p className="text-sm font-medium text-slate-400">
+            Loading failed search opportunities...
+          </p>
+          <div className="mt-4 h-3 w-64 animate-pulse rounded-full bg-slate-800" />
+          <div className="mt-3 h-3 w-96 max-w-full animate-pulse rounded-full bg-slate-800" />
+        </div>
+      </section>
     );
   }
 
-  if (errorMessage || !data) {
+  if (errorMessage) {
     return (
-      <div className="rounded-lg border border-border bg-card p-6">
-        <h3 className="mb-2 text-sm font-medium text-danger">
-          Search Loss data unavailable
-        </h3>
-        <p className="text-sm text-muted-foreground">{errorMessage}</p>
-      </div>
+      <section className="space-y-6 rounded-[28px] border border-slate-800 bg-slate-950/60 p-6">
+        <div className="rounded-3xl border border-red-500/30 bg-red-950/30 p-8 shadow-[0_8px_30px_rgba(2,8,23,0.35)]">
+          <h2 className="text-lg font-semibold text-red-200">
+            Failed search opportunities could not be loaded
+          </h2>
+          <p className="mt-2 text-sm text-red-300">{errorMessage}</p>
+          <p className="mt-4 text-sm text-red-300/90">
+            Check that the Vercel API route is running and that the Magento API
+            URL/token are set correctly.
+          </p>
+        </div>
+      </section>
     );
   }
-
-  const { searchData, failedSearchTerms } = data;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KPICard
-          title="On-Site Searches"
-          value={searchData.totalSearches.toLocaleString()}
-          variant="accent"
-        />
+    <section className="space-y-6 rounded-[28px] border border-slate-800 bg-slate-950/60 p-6">
+      <div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/70 p-7 shadow-[0_8px_30px_rgba(2,8,23,0.35)]">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-4xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-300/80">
+              Opportunities
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              Failed search opportunities
+            </h1>
+            <p className="mt-4 text-base leading-8 text-slate-300 sm:text-lg">
+              Ranked search terms where customer intent appears to be unmatched.
+              Use this view to decide which search, catalogue, synonym, redirect,
+              or merchandising fixes should be reviewed first.
+            </p>
+          </div>
 
-        <KPICard
-          title="Failed Searches"
-          value={searchData.failedSearches.toLocaleString()}
-          variant="danger"
-        />
-
-        <KPICard
-          title="Zero-Result Rate"
-          value={formatPercent(searchData.zeroResultRate)}
-          variant="danger"
-        />
-
-        <KPICard
-          title="Estimated Lost Revenue"
-          value={formatCurrency(searchData.modeledDemandLost)}
-          variant="danger"
-        />
+          {topOpportunityTerm ? (
+            <div className="max-w-md rounded-2xl border border-blue-500/20 bg-blue-500/10 px-5 py-4 shadow-[0_6px_24px_rgba(2,8,23,0.25)]">
+              <p className="text-sm font-medium text-blue-200/80">
+                Top opportunity
+              </p>
+              <p className="mt-2 text-lg font-semibold text-white">
+                {topOpportunityTerm.term}
+              </p>
+              <p className="mt-1 text-sm text-blue-100/75">
+                {formatCurrency(topOpportunityTerm.lostRevenue)} estimated
+                revenue at risk.
+              </p>
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <InsightNote text="Search is high-intent demand. These are customers telling the store exactly what they want, but Magento is not successfully matching them to products." />
-
-        <InsightNote
-          variant="warning"
-          text={`${formatPercent(
-            searchData.zeroResultRate
-          )} of recorded searches currently return zero results. That represents ${searchData.failedSearches.toLocaleString()} failed search events from ${searchData.totalSearches.toLocaleString()} total searches.`}
-        />
-
-        <InsightNote
-          text={`Estimated lost revenue is modeled from failed searches, average order value (${formatCurrency(
-            searchData.averageOrderValue
-          )}), and observed search-to-order rate (${formatPercent(
-            searchData.searchToOrderRate
-          )}). Treat this as directional revenue recovery potential, not exact accounting.`}
-        />
-      </div>
-
-      <div className="rounded-lg border border-border bg-card p-5">
-        <div className="mb-5">
-          <h3 className="text-[13px] font-medium text-muted-foreground">
-            Search Loss Opportunities
-          </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Ranked by estimated revenue risk, failed search volume, and likely
-            fix type.
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-[0_8px_24px_rgba(2,8,23,0.25)]">
+          <p className="text-sm font-medium text-slate-400">
+            Failed Searches
+          </p>
+          <p className="mt-3 text-4xl font-semibold tracking-tight text-white">
+            {formatNumber(searchData.failedSearches)}
+          </p>
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            Total failed searches currently visible in Magento data.
           </p>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] table-fixed text-[12px]">
-            <colgroup>
-              <col className="w-[170px]" />
-              <col className="w-[80px]" />
-              <col className="w-[115px]" />
-              <col className="w-[115px]" />
-              <col className="w-[190px]" />
-              <col className="w-[115px]" />
-              <col />
-            </colgroup>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-[0_8px_24px_rgba(2,8,23,0.25)]">
+          <p className="text-sm font-medium text-slate-400">
+            Opportunity Terms
+          </p>
+          <p className="mt-3 text-4xl font-semibold tracking-tight text-white">
+            {formatNumber(failedSearchTerms.length)}
+          </p>
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            Ranked terms with likely missed-demand opportunities.
+          </p>
+        </div>
 
-            <thead>
-              <tr className="border-b border-border">
-                <th className="whitespace-nowrap pb-3 pr-4 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  Term
-                </th>
-
-                <th className="whitespace-nowrap pb-3 pr-4 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  Searches
-                </th>
-
-                <th className="whitespace-nowrap pb-3 pr-4 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  Lost Rev.
-                </th>
-
-                <th className="whitespace-nowrap pb-3 pr-4 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  Priority
-                </th>
-
-                <th className="whitespace-nowrap pb-3 pr-4 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  Fix Type
-                </th>
-
-                <th className="whitespace-nowrap pb-3 pr-4 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  Confidence
-                </th>
-
-                <th className="whitespace-nowrap pb-3 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  Suggested Action
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {failedSearchTerms.map((term) => (
-                <tr
-                  key={term.term}
-                  className="border-b border-border align-top last:border-0"
-                >
-                  <td className="py-4 pr-4 font-mono text-[11px] leading-relaxed text-foreground">
-                    "{term.term}"
-                  </td>
-
-                  <td className="py-4 pr-4 text-right text-foreground">
-                    {term.count.toLocaleString()}
-                  </td>
-
-                  <td className="py-4 pr-4 text-right font-medium text-danger">
-                    {formatCurrency(term.lostRevenue)}
-                  </td>
-
-                  <td className="py-4 pr-4 text-center">
-                    <span className={scoreClassName(term.opportunityScore)}>
-                      {term.opportunityScore}
-                    </span>
-                  </td>
-
-                  <td className="py-4 pr-4 font-medium leading-relaxed text-foreground">
-                    {term.fixType}
-                  </td>
-
-                  <td className="py-4 pr-4 text-center">
-                    <span className={confidenceClassName(term.confidence)}>
-                      {term.confidence}
-                    </span>
-                  </td>
-
-                  <td className="py-4 leading-relaxed text-muted-foreground">
-                    {term.suggestedFix}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-slate-900 to-blue-950/60 p-5 shadow-[0_8px_24px_rgba(2,8,23,0.25)]">
+          <p className="text-sm font-medium text-slate-300">
+            Estimated Revenue at Risk
+          </p>
+          <p className="mt-3 text-4xl font-semibold tracking-tight text-white">
+            {formatCurrency(searchData.modeledDemandLost)}
+          </p>
+          <p className="mt-3 text-sm leading-6 text-slate-300/80">
+            Directional value across failed search demand.
+          </p>
         </div>
       </div>
-    </div>
-  );
-};
 
-export default TabSearchDiscovery;
+      <div className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/80 shadow-[0_8px_30px_rgba(2,8,23,0.35)]">
+        <div className="border-b border-slate-800 bg-slate-900/95 p-6">
+          <div className="max-w-3xl">
+            <h2 className="text-2xl font-semibold tracking-tight text-white">
+              Ranked search fixes
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              Each row combines demand signal, estimated revenue at risk,
+              likely fix type, confidence, and a suggested next action.
+            </p>
+          </div>
+        </div>
+
+        {failedSearchTerms.length === 0 ? (
+          <div className="p-8 text-sm text-slate-300">
+            No failed search terms were returned by the API.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-fixed divide-y divide-slate-800">
+              <thead className="bg-slate-950/60">
+                <tr>
+                  <th className="w-[18%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Term
+                  </th>
+                  <th className="w-[9%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Searches
+                  </th>
+                  <th className="w-[11%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Revenue at Risk
+                  </th>
+                  <th className="w-[10%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Priority
+                  </th>
+                  <th className="w-[16%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Fix Type
+                  </th>
+                  <th className="w-[10%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Confidence
+                  </th>
+                  <th className="w-[26%] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Suggested Action
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-800">
+                {failedSearchTerms.map((item) => (
+                  <tr
+                    key={item.term}
+                    className="align-top transition-colors hover:bg-slate-800/50"
+                  >
+                    <td className="px-5 py-5">
+                      <p className="font-semibold text-white">{item.term}</p>
+                      {item.trend ? (
+                        <p className="mt-1 text-xs text-slate-400">
+                          Trend: {item.trend}
+                        </p>
+                      ) : null}
+                    </td>
+
+                    <td className="px-5 py-5 text-sm font-medium text-slate-200">
+                      {formatNumber(item.count)}
+                    </td>
+
+                    <td className="px-5 py-5 text-sm font-semibold text-white">
+                      {formatCurrency(item.lostRevenue)}
+                    </td>
+
+                    <td className="px-5 py-5">
+                      <span
+                        className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getPriorityClasses(
+                          item.opportunityScore
+                        )}`}
+                      >
+                        {item.opportunityScore || "Review"}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-5 text-sm text-slate-300">
+                      {item.fixType || "Review required"}
+                    </td>
+
+                    <td className="px-5 py-5">
+                      <span
+                        className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getConfidenceClasses(
+                          item.confidence
+                        )}`}
+                      >
+                        {item.confidence || "Unknown"}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-5 text-sm leading-6 text-slate-300">
+                      {item.suggestedFix || "Review this search term manually."}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
